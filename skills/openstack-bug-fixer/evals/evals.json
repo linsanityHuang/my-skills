@@ -1,0 +1,121 @@
+{
+  "skill_name": "openstack-bug-fixer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "修一下 BUG-001, 那个 cputime 为 0 的除零错误",
+      "expected_output": "Skill re-detects project from .gitreview (openstack/nova), loads nova adapter, reads nova/compute/monitors/cpu/virt_driver.py, re-verifies the ZeroDivisionError trigger, applies a minimal guard (`if cputime <= 0: return ...`), adds 2 regression tests in nova/tests/unit/compute/monitors/cpu/test_virt_driver.py, runs pre-commit on the changed files, writes a release note under releasenotes/notes/fix-cpu-monitor-zero-delta-<hex>.yaml, and stages the 3 files with `git add`. Stops here — does NOT auto-commit or push (user did not use a commit/push verb).",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "把 scanner 报告里 A4-001 那个 bug 修掉 (libvirt/migration.py:264-289 那一组 .find().set() 缺 None 检查)",
+      "expected_output": "Skill reads .tmp/bug-scan/.../final-report.md, picks FINDING A4-001, re-reads the source, applies a minimal None guard around each of the 4 .find().set() calls, adds a unit test for one of them in nova/tests/unit/virt/libvirt/test_migration.py, runs pre-commit + the test, writes a release note, and stages the changes. Hands off to the user for `git commit` / `git push`.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "在 cinder/volume/manager.py 修一个未检查 None 的 bug: volume['volume_metadata']['key'] 在 metadata 为空时崩",
+      "expected_output": "Skill re-detects project from .gitreview (openstack/cinder), loads cinder adapter, re-reads cinder/volume/manager.py, applies a minimal `.get('volume_metadata', {})` or `obj.volume.metadata` change, adds a regression test in cinder/tests/unit/volume/test_manager.py, runs pre-commit + the test, writes a release note under releasenotes/notes/fix-<slug>-<hex>.yaml, and stages the 3 files. Does NOT re-scan cinder/ for other bugs.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "把 .tmp/bug-scan/run-2-resume-2026-06-12/final-report.md 里 HIGH 那个 bug 修了, 改完帮我 stage",
+      "expected_output": "Skill opens the named final-report.md, takes the first HIGH finding, runs the full fix → test → pre-commit → release note → git add pipeline, shows the proposed commit message, and stops. NO git commit / push.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "修 BUG-001, 那个 cputime 为 0 的除零错误, 改完用 git review 推上去",
+      "expected_output": "Full fix → test → pre-commit → release-note → stage → commit → push pipeline. Preflight runs: checks `git-review` is installed (asks user before pip install), reads .gitreview and verifies gerrit remote URL points to openstack/nova.git (refuses + asks if mismatched), creates a feature branch bug-001/zero-cputime-delta if on master, checks local master not diverged from gerrit/master (warns/fails if behind), tests SSH auth to review.opendev.org:29418, then runs `git review -y`. Surfaces the resulting https://review.opendev.org/c/openstack/nova/+/<NNN> URL.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "把 BUG-001 那个 cputime 0 的除零修了, 提交并推到 Gerrit",
+      "expected_output": "Same as eval 5: full pipeline including git review push. The '提交并推' / 'commit and push' wording triggers both the commit and push sub-phases of Phase 4. Surfaces the Gerrit change URL.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "修 BUG-001 然后推到 Gerrit (我本地 master 落后于 upstream 大约 50 个 commit, 之前 push 一直报 Missing tree)",
+      "expected_output": "Skill runs the fix pipeline, then in preflight detects that local master is behind gerrit/master (~50 commits). Stops and asks the user whether to (a) `git rebase gerrit/master` and retry, (b) merge gerrit/master into the feature branch, or (c) push anyway knowing it will likely fail. Does NOT silently rebase or push.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "修 BUG-001 推到 Gerrit (我的 .gitreview 是 openstack/nova 但 gerrit remote URL 是 openstack/cinder)",
+      "expected_output": "Skill's preflight detects the URL mismatch between `.gitreview` (openstack/nova.git) and `git remote get-url gerrit` (openstack/cinder.git). Stops and asks the user to confirm before running `git remote set-url gerrit ssh://.../openstack/nova.git`. Does NOT silently rewrite the remote, since a wrong-project push is hard to retract.",
+      "files": []
+    },
+    {
+      "id": 9,
+      "prompt": "修 cinder BUG-014: cinder/volume/manager.py:4521 `dict['volume_metadata']['key']` KeyError, 然后 git review 推上去",
+      "expected_output": "Full pipeline. Project detection picks up openstack/cinder → loads cinder adapter. Source fix uses .get() pattern. Test added in cinder/tests/unit/volume/. Release note under cinder/releasenotes/notes/. Push to https://review.opendev.org/c/openstack/cinder/+/<NNN>.",
+      "files": []
+    },
+    {
+      "id": 10,
+      "prompt": "修 glance BUG-007 (image.get('checksum') 缺 None 守卫), commit and push",
+      "expected_output": "Full pipeline. Project detection picks up openstack/glance → loads glance adapter. Adapter notes that glance tests don't typically set OS_GLANCE_DISABLE_EVENTLET_PATCHING. Source fix + test + release note + push to https://review.opendev.org/c/openstack/glance/+/<NNN>.",
+      "files": []
+    },
+    {
+      "id": 11,
+      "prompt": "修 neutron BUG-022: neutron/agent/linux/ip_lib.py:444 那个 device.link.address 在 device 未起来时返回 None 崩",
+      "expected_output": "Full pipeline. Project detection picks up openstack/neutron → loads neutron adapter. Adapter warns that neutron uses `neutron._i18n` (not `neutron.i18n`). Source fix + test + release note + push to https://review.opendev.org/c/openstack/neutron/+/<NNN>.",
+      "files": []
+    },
+    {
+      "id": 12,
+      "prompt": "修 BUG-001 (从 keystone 仓库), 那是个 token revocation 的 race",
+      "expected_output": "Skill runs the fix. Project detection picks up openstack/keystone, but no per-project adapter exists yet, so it falls back to default.md. The skill still produces a valid fix + test + release note + push, but the user is told the default adapter is in use and the project is identified for future adapter authoring.",
+      "files": []
+    }
+  ],
+  "negative_evals": [
+    {
+      "id": 13,
+      "prompt": "把 cinder/volume/manager.py 重构一下,让 create_volume() 方法拆成更小的辅助方法",
+      "should_trigger": false,
+      "reason": "Refactor, not a single-bug fix. openstack-bug-fixer is for minimal, targeted bug patches only."
+    },
+    {
+      "id": 14,
+      "prompt": "扫一遍 glance/ 看是否有 dict['key'] 直接访问但 key 可能不存在的 bug",
+      "should_trigger": false,
+      "reason": "This is a scan, not a fix. Use the project's bug-scanner — the fixer doesn't re-scan for new bugs."
+    },
+    {
+      "id": 15,
+      "prompt": "在 Kubernetes operator 仓库修一个 bug",
+      "should_trigger": false,
+      "reason": "Not an OpenStack project. Wrong workflow (no Gerrit, no .gitreview for review.opendev.org). Use a different fixer skill."
+    },
+    {
+      "id": 16,
+      "prompt": "解释一下 cinder/volume/manager.py 的 create_volume 流程",
+      "should_trigger": false,
+      "reason": "Code explanation, not a fix."
+    },
+    {
+      "id": 17,
+      "prompt": "修 BUG-001 然后帮我 push",
+      "should_trigger": true,
+      "reason": "User explicitly says 'push'. openstack-bug-fixer triggers and runs the full fix → test → pre-commit → release-note → stage → commit → git review pipeline. (This is in the should-trigger set, not negative, even though the user phrased it casually — 'push' is an explicit push verb.)"
+    },
+    {
+      "id": 18,
+      "prompt": "修 BUG-001",
+      "should_trigger": true,
+      "reason": "Stage-only path. Skill triggers, applies the fix, runs tests + pre-commit + release note, stages the 3 files, and stops. User did not include a commit/push verb, so the skill does not commit or push."
+    },
+    {
+      "id": 19,
+      "prompt": "我在 horizon 仓库, 修 BUG-XXX 然后用 git review 推上去",
+      "should_trigger": true,
+      "reason": "Horizon is an OpenStack project. Skill auto-detects openstack/horizon, falls back to default.md adapter (no per-project adapter yet), and runs the full pipeline. The user is told about the fallback so they can author an adapter later."
+    }
+  ]
+}
