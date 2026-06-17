@@ -1,0 +1,91 @@
+{
+  "skill_name": "openstack-bug-scanner",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "在 nova/virt/libvirt/ 找一个 etree 树 .find() 后没检查 None 就访问 .text 的地方,可能有 KeyError 风险",
+      "expected_output": "Phase 1 detects openstack/nova via .gitreview, loads nova adapter. Skill spawns 1-3 parallel agents covering nova/virt/libvirt/, each writing findings to disk as it goes. Final output: a final-report.md with HIGH/MEDIUM sorted list, file:line per finding, trigger, suggested fix, and a status (VERIFIED/DOWNGRADED/REJECTED). Suggested fixes respect Nova adapter anti-patterns (no nova.db imports in nova/virt/*, no from nova.privsep import path). NO source files are modified, no tests added, no release note, no commit. Hands off to openstack-bug-fixer for the top finding.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "扫一遍 nova/objects/ 看是否有 dict['key'] 直接访问但 key 可能不存在的 bug",
+      "expected_output": "Phase 1 detects openstack/nova, loads nova adapter. Skill fans out 2-3 agents across nova/objects/ (split by domain — instance.py, compute_node.py, migration.py, etc.), each writing findings to a per-agent .md file. Synthesizes final-report.md sorted HIGH→MEDIUM. No source edits, no commits, no release notes.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "hunt bugs in nova/scheduler/ — looking for division-by-zero and empty-list [0] patterns",
+      "expected_output": "Phase 1 detects openstack/nova, loads nova adapter. Skill scopes to nova/scheduler/, spawns 1-2 agents, writes findings per the scanner template, verifies each, and produces a final-report.md with severity-sorted findings. Suggests handing the top finding to openstack-bug-fixer.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "在 nova/api/openstack/compute/flavors.py 找一找有没有未检查 None 的 bug",
+      "expected_output": "Phase 1 detects openstack/nova, loads nova adapter. Skill scans the single file via 1 agent, finds (or fails to find) an unchecked-None bug, verifies the finding, and writes final-report.md. Does NOT touch the source file.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "在 cinder/volume/manager.py 找一个 unchecked None 的 bug",
+      "expected_output": "Phase 1 detects openstack/cinder (via .gitreview or setup.cfg), loads cinder adapter (NOT nova). Skill scopes to cinder/volume/manager.py, spawns 1 agent. Suggested fix uses `from cinder.i18n import _` (not nova's), respects the cinder-specific anti-patterns (no direct DB from cinder/volume/drivers/*). Final-report.md is produced. Demonstrates cross-project support — the new skill handles Cinder without a wrapper.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "hunt bugs in neutron/agent/linux/ — looking for unchecked None on device.link.address",
+      "expected_output": "Phase 1 detects openstack/neutron, loads neutron adapter. Adapter-specific rules apply (neutron._i18n, not neutron.i18n; neutron.common.utils.ReaderWriterLock; no cross-imports between mech_*/type_* drivers; agent code shouldn't import DB). Skill fans out 1-2 agents across neutron/agent/linux/, verifies findings against the project-specific anti-patterns, and produces final-report.md.",
+      "files": []
+    },
+    {
+      "id": 7,
+      "prompt": "扫 glance/api/v2/images.py 找 unchecked None 的 bug",
+      "expected_output": "Phase 1 detects openstack/glance, loads glance adapter. Skill scans the single file (1 agent), finds (or fails to find) unchecked-None bugs on image.get('checksum') etc. Verifies against glance's typical finding shapes (`image.get('property_name')` returning None then chained access, etc.). Produces final-report.md. No source edits.",
+      "files": []
+    },
+    {
+      "id": 8,
+      "prompt": "在 keystone/identity/ 找除零错误",
+      "expected_output": "Phase 1 detects openstack/keystone. There is no per-project adapter for keystone, so the skill falls back to default.md. The skill still works — generic HACKING rules from openstack-conventions.md apply. Skill notes in its progress.md that default adapter is in use so the user can author a keystone adapter later. Scans keystone/identity/, produces final-report.md.",
+      "files": []
+    }
+  ],
+  "negative_evals": [
+    {
+      "id": 9,
+      "prompt": "把 nova/compute/manager.py 重构一下,让 spawn() 方法拆成更小的辅助方法",
+      "should_trigger": false,
+      "reason": "Refactor, not a simple-bug hunt. The scanner skill explicitly does not trigger for refactors."
+    },
+    {
+      "id": 10,
+      "prompt": "在 Kubernetes operator 仓库找一个 None bug",
+      "should_trigger": false,
+      "reason": "Not an OpenStack project. The scanner auto-detects via .gitreview; a Kubernetes repo won't match openstack/<x>.git on review.opendev.org."
+    },
+    {
+      "id": 11,
+      "prompt": "解释一下 cinder/volume/manager.py 的 create_volume 流程",
+      "should_trigger": false,
+      "reason": "Code explanation, not a bug hunt."
+    },
+    {
+      "id": 12,
+      "prompt": "修一下 BUG-001, 那个 cputime 为 0 的除零错误",
+      "should_trigger": false,
+      "reason": "The user wants a specific bug FIXED, not scanned. openstack-bug-fixer is the right skill. openstack-bug-scanner would just re-confirm the bug exists without applying the fix."
+    },
+    {
+      "id": 13,
+      "prompt": "nova-compute 在 graceful shutdown 时有什么已知的 race condition?",
+      "should_trigger": false,
+      "reason": "Race conditions are out of scope (only simple, single-file bugs)."
+    },
+    {
+      "id": 14,
+      "prompt": "在 cinder 代码里找一个 SQL injection 漏洞",
+      "should_trigger": false,
+      "reason": "Security audit. Use a dedicated security review skill, not a simple-bug scanner."
+    }
+  ]
+}
